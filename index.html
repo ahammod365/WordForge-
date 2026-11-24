@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#111827"><title>WordForge — Word Workspace</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body data-theme="dark">
+<div class="desktop">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark">W</div><div><b>WordForge</b><small>MULTI WORD SOLVER</small></div></div>
+    <div class="top-status"><span class="status-dot"></span> LOCAL ENGINE <span class="sep">/</span> <span id="dictStatus">Built-in dictionary</span></div>
+    <div class="top-actions">
+      <button class="icon-btn" id="themeBtn" title="Toggle theme">☼</button>
+      <button class="icon-btn" id="helpBtn" title="Help">?</button>
+      <button class="profile">WF</button>
+    </div>
+  </header>
+  <aside class="rail">
+    <button class="rail-btn active" data-open="solver" title="Multi Word Solver">⌘</button>
+    <button class="rail-btn" data-open="anagram" title="Anagram Finder">⤨</button>
+    <button class="rail-btn" data-open="missing" title="Missing Letter Solver">▦</button>
+    <button class="rail-btn" data-open="filter" title="Word Length Filter">☷</button>
+    <button class="rail-btn" data-open="score" title="Scrabble Score">✳</button>
+    <div class="rail-spacer"></div>
+    <button class="rail-btn" data-open="dictionary" title="Dictionary manager">▤</button>
+  </aside>
+  <main class="workspace" id="workspace">
+    <div class="welcome">
+      <div class="welcome-kicker">YOUR WORD WORKSPACE</div>
+      <h1>Make every letter<br><span>count.</span></h1>
+      <p>Open a tool to explore combinations, solve word puzzles and find your next move.</p>
+      <div class="quick-launch">
+        <button class="launch-card" data-open="solver"><span>⌘</span><b>Multi Word Solver</b><small>Build words from letters</small></button>
+        <button class="launch-card" data-open="anagram"><span>⤨</span><b>Anagram Finder</b><small>Rearrange a word</small></button>
+        <button class="launch-card" data-open="missing"><span>▦</span><b>Missing Letter</b><small>Match a pattern</small></button>
+      </div>
+      <div class="workspace-tip"><span>TIP</span> Drag any window by its title bar. Open several tools and work side by side.</div>
+    </div>
+    <div class="desktop-footer"><span>WORDFORGE WORKSPACE</span><span id="windowCount">0 WINDOWS OPEN</span></div>
+  </main>
+  <footer class="taskbar">
+    <button class="task-home" id="homeBtn">W</button><div class="task-items" id="taskItems"></div>
+    <div class="task-right"><span class="engine-pill"><i></i> ENGINE READY</span><span id="clock"></span></div>
+  </footer>
+</div>
+<div id="windowLayer"></div>
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body></html>
