@@ -194,8 +194,7 @@ showResults(el, out);
       toast('Enter a pattern of at least 3 characters');
       return;
     }
-
-    const out = words.filter(w => {
+const out = (wordsByLength.get(p.length) || []).filter(w => {
       if (w.length !== p.length) return false;
 
       for (let i = 0; i < p.length; i++) {
@@ -209,7 +208,7 @@ showResults(el, out);
 
   } else if (type === 'filter') {
     const n = +get('filterLen');
-    showResults(el, words.filter(w => w.length === n).sort());
+    showResults(el, [...(wordsByLength.get(n) || [])].sort());
   }
 
   else if (type === 'score') {
