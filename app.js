@@ -123,7 +123,7 @@ function showResults(el,words){
 
 function run(el, type) {
   const get = id => el.querySelector('#' + id)?.value || '';
-  const words = allWords();
+  //const words = allWords();
 
   if (type === 'solver') {
     const letters = get('letters').toLowerCase().replace(/[^a-z?]/g, '');
@@ -143,23 +143,26 @@ function run(el, type) {
     const min = +get('minLen');
     const max = +get('maxLen');
 
-    const out = [];
+const out = [];
 
-    for (const w of words) {
-      if (w.length < min || w.length > max || w.length > letters.length) continue;
+for (let length = min; length <= Math.min(max, letters.length); length++) {
+  const candidates = wordsByLength.get(length) || [];
 
-      const available = { ...counts };
-      let missing = 0;
+  for (const w of candidates) {
+    const available = { ...counts };
+    let missing = 0;
 
-      for (const c of w) {
-        if (available[c] > 0) available[c]--;
-        else missing++;
+    for (const c of w) {
+      if (available[c] > 0) available[c]--;
+      else missing++;
 
-        if (missing > wild) break;
-      }
-
-      if (missing <= wild) out.push(w);
+      if (missing > wild) break;
     }
+
+    if (missing <= wild) out.push(w);
+  }
+}
+
 
     const sort = el.querySelector('#sortScore').checked;
     out.sort((a, b) =>
