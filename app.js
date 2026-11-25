@@ -185,7 +185,7 @@ const out = (anagramIndex.get(key) || [])
   .filter(w => includeSelf || w !== s);
 
 out.sort((a, b) => score(b) - score(a) || a.localeCompare(b));
-showResults(el, out);11
+showResults(el, out);
 
   } else if (type === 'missing') {
     const p = get('pattern').toLowerCase().replace(/[^a-z?]/g, '');
