@@ -25,6 +25,7 @@ let largeWords = new Set();
 let dictionaryCache = null;
 let wordsByLength = new Map();
 let anagramIndex = new Map();
+let searchCache = new Map();
 
 function allWords(){
   if (!dictionaryCache) {
@@ -38,10 +39,29 @@ function allWords(){
   return dictionaryCache;
 }
 
+function getCachedResults(key, createResults) {
+  if (searchCache.has(key)) {
+    return searchCache.get(key);
+  }
+
+  const results = createResults();
+
+  searchCache.set(key, results);
+
+  // Keep cache memory under control.
+  if (searchCache.size > 30) {
+    const oldestKey = searchCache.keys().next().value;
+    searchCache.delete(oldestKey);
+  }
+
+  return results;
+}
+
 function rebuildWordIndexes(){
   dictionaryCache = null;
   wordsByLength.clear();
   anagramIndex.clear();
+ searchCache.clear();
 
   for (const word of allWords()) {
     const length = word.length;
@@ -69,6 +89,8 @@ function rebuildWordIndexes(){
 }
 
 rebuildWordIndexes();
+
+
 
 async function loadLargeDictionary(){
  try {
@@ -184,9 +206,13 @@ if (s.length < 3) {
 const key = [...s].sort().join('');
 const includeSelf = el.querySelector('#includeSelf').checked;
 
-const out = (anagramIndex.get(key) || [])
-  .filter(w => includeSelf || w !== s);
-
+/*const out = (anagramIndex.get(key) || [])
+  .filter(w => includeSelf || w !== s);*/
+const out = getCachedResults(
+  `anagram:${key}:${includeSelf}`,
+  () => (anagramIndex.get(key) || [])
+    .filter(w => includeSelf || w !== s)
+);
 out.sort((a, b) => score(b) - score(a) || a.localeCompare(b));
 showResults(el, out);
 
@@ -198,13 +224,19 @@ showResults(el, out);
       return;
     }
 const out = (wordsByLength.get(p.length) || []).filter(w => {
-      if (w.length !== p.length) return false;
+ const out = getCachedResults(
+  `missing:${p}`,
+  () => (wordsByLength.get(p.length) || []).filter(w => {
+    return [...p].every((c, i) => c === '?' || c === w[i]);
+  })
+);
+   /*   if (w.length !== p.length) return false;
 
       for (let i = 0; i < p.length; i++) {
         if (p[i] !== '?' && p[i] !== w[i]) return false;
       }
 
-      return true;
+      return true; */
     });
 
     showResults(el, out.sort());
