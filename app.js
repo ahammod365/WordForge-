@@ -14,11 +14,62 @@ const tools={
  help:{title:'WordForge Guide',icon:'?',sub:'QUICK HELP'}
 };
 //function allWords(){return [...new Set([...wordSet,...customWords])];}
-let largeWords = new Set();
+/* let largeWords = new Set();
 
 function allWords(){
  return [...new Set([...wordSet,...largeWords,...customWords])];
+} */
+
+let largeWords = new Set();
+
+let dictionaryCache = null;
+let wordsByLength = new Map();
+let anagramIndex = new Map();
+
+function allWords(){
+  if (!dictionaryCache) {
+    dictionaryCache = [...new Set([
+      ...wordSet,
+      ...largeWords,
+      ...customWords
+    ])];
+  }
+
+  return dictionaryCache;
 }
+
+function rebuildWordIndexes(){
+  dictionaryCache = null;
+  wordsByLength.clear();
+  anagramIndex.clear();
+
+  for (const word of allWords()) {
+    const length = word.length;
+
+    if (!wordsByLength.has(length)) {
+      wordsByLength.set(length, []);
+    }
+
+    wordsByLength.get(length).push(word);
+
+    const key = [...word].sort().join('');
+
+    if (!anagramIndex.has(key)) {
+      anagramIndex.set(key, []);
+    }
+
+    anagramIndex.get(key).push(word);
+  }
+
+  console.log('WordForge Index Engine:', {
+    words: allWords().length,
+    lengthGroups: wordsByLength.size,
+    anagramGroups: anagramIndex.size
+  });
+}
+
+rebuildWordIndexes();
+
 async function loadLargeDictionary(){
  try {
   const response = await fetch('./public/dictionary/words-3-12.txt');
@@ -31,7 +82,7 @@ async function loadLargeDictionary(){
   );
 
   console.log('WordForge dictionary loaded:', largeWords.size);
-
+rebuildWordIndexes();
   const info = document.querySelector('#dictInfo');
   if(info){
    info.textContent = allWords().length.toLocaleString() + ' words currently loaded';
@@ -122,22 +173,19 @@ function run(el, type) {
   } else if (type === 'anagram') {
     const s = get('anaInput').toLowerCase().replace(/[^a-z]/g, '');
 
-    if (s.length < 3) {
-      toast('Enter at least 3 letters');
-      return;
-    }
+if (s.length < 3) {
+  toast('Enter at least 3 letters');
+  return;
+}
 
-    const key = [...s].sort().join('');
-    const includeSelf = el.querySelector('#includeSelf').checked;
+const key = [...s].sort().join('');
+const includeSelf = el.querySelector('#includeSelf').checked;
 
-    const out = words.filter(w =>
-      w.length === s.length &&
-      (includeSelf || w !== s) &&
-      [...w].sort().join('') === key
-    );
+const out = (anagramIndex.get(key) || [])
+  .filter(w => includeSelf || w !== s);
 
-    out.sort((a, b) => score(b) - score(a) || a.localeCompare(b));
-    showResults(el, out);
+out.sort((a, b) => score(b) - score(a) || a.localeCompare(b));
+showResults(el, out);11
 
   } else if (type === 'missing') {
     const p = get('pattern').toLowerCase().replace(/[^a-z?]/g, '');
@@ -200,7 +248,7 @@ function wire(el,type){
   if(e.target.id==='exportDict'){let blob=new Blob([allWords().sort().join('\n')],{type:'text/plain'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='wordforge-dictionary.txt';a.click();URL.revokeObjectURL(a.href)}
  });
  el.addEventListener('keydown',e=>{if(e.key==='Enter'){let btn=el.querySelector('[data-run]');if(btn)run(el,type)}});
- const file=el.querySelector('#dictFile');if(file)file.addEventListener('change',async()=>{let f=file.files[0];if(!f)return;let txt=await f.text(),added=0;for(let w of txt.toLowerCase().split(/\s+/)){w=w.replace(/[^a-z]/g,'');if(w.length>=3&&w.length<=12&&!wordSet.has(w)&&!customWords.has(w)){customWords.add(w);added++}}$('#dictStatus').textContent='Custom dictionary loaded';el.querySelector('#dictInfo').textContent=`${allWords().length.toLocaleString()} words loaded · ${added.toLocaleString()} new words imported`;toast(`${added} new words imported`)});
+ const file=el.querySelector('#dictFile');if(file)file.addEventListener('change',async()=>{let f=file.files[0];if(!f)return;let txt=await f.text(),added=0;for(let w of txt.toLowerCase().split(/\s+/)){w=w.replace(/[^a-z]/g,'');if(w.length>=3&&w.length<=12&&!wordSet.has(w)&&!customWords.has(w)){customWords.add(w);added++}}rebuildWordIndexes();$('#dictStatus').textContent='Custom dictionary loaded';el.querySelector('#dictInfo').textContent=`${allWords().length.toLocaleString()} words loaded · ${added.toLocaleString()} new words imported`;toast(`${added} new words imported`)});
 }
 function activate(el){document.querySelectorAll('.window').forEach(w=>w.classList.remove('active'));el.classList.add('active');el.style.zIndex=++z;document.querySelectorAll('.task-item').forEach(b=>b.classList.toggle('active',b.dataset.type===el.dataset.type))}
 function restore(type){let el=windows.get(type);if(!el)return;el.classList.remove('minimized');activate(el);updateTasks()}
