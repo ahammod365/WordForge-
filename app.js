@@ -69,28 +69,120 @@ function showResults(el,words){
  if(!words.length){box.className='results empty';box.textContent='No matching words found. Try different letters or import a larger dictionary.';return}
  box.className='results word-grid';box.innerHTML=words.slice(0,600).map(w=>`<div class="word-chip"><span>${w}</span><small>${score(w)} pts</small></div>`).join('')+(words.length>600?`<div class="tool-note">Showing first 600 of ${words.length} results. Refine the filters to narrow the list.</div>`:'');
 }
-function run(el,type){
- const get=id=>el.querySelector('#'+id)?.value||'';
- if(type==='solver'){
-  let letters=get('letters').toLowerCase().replace(/[^a-z?]/g,'');if(letters.length<3){toast('Enter at least 3 letters');return}
-  let counts={},wild=0;for(let c of letters)c==='?'?wild++:counts[c]=(counts[c]||0)+1;
-  let min=+get('minLen'),max=+get('maxLen');
-  let out=allWords().filter(w=>w.length>=min&&w.length<=max&&w.length<=letters.length&&[...w].every(c=>{if(counts[c]>0){counts[c]--;return true}return false}) );
-  // Recount per word; wildcards cover missing letters.
-  out=allWords().filter(w=>{if(w.length<min||w.length>max||w.length>letters.length)return false;let c={};for(let x of letters)if(x!=='?')c[x]=(c[x]||0)+1;let missing=0;for(let x of w){if(c[x]>0)c[x]--;else missing++}return missing<=wild});
-  out.sort((a,b)=>el.querySelector('#sortScore').checked?(score(b)-score(a)||b.length-a.length||a.localeCompare(b)):b.length-a.length||a.localeCompare(b));showResults(el,out);
- }else if(type==='anagram'){
-  let s=get('anaInput').toLowerCase().replace(/[^a-z]/g,'');if(s.length<3){toast('Enter at least 3 letters');return}
-  let key=[...s].sort().join('');let out=allWords().filter(w=>w.length===s.length&&[...w].sort().join('')===key&& (el.querySelector('#includeSelf').checked||w!==s)).sort((a,b)=>score(b)-score(a)||a.localeCompare(b));showResults(el,out);
- }else if(type==='missing'){
-  let p=get('pattern').toLowerCase().replace(/[^a-z?]/g,'');if(p.length<3){toast('Enter a pattern of at least 3 characters');return}
-  let re=new RegExp('^'+p.replace(/[.*+^${}()|[\\]\\\\]/g,'\\$&').replace(/\?/g,'.')+'$');showResults(el,allWords().filter(w=>re.test(w)).sort());
- }else if(type==='filter'){let n=+get('filterLen');showResults(el,allWords().filter(w=>w.length===n).sort())}
- else if(type==='score'){
-  let w=get('scoreInput').toLowerCase().replace(/[^a-z]/g,'');if(!w){toast('Enter a word');return}
-  let total=score(w);el.querySelector('#scoreResult').innerHTML=`<div class="score-big">${total}<span style="font-size:16px;color:var(--muted)"> pts</span></div><div class="score-tiles">${[...w].map(c=>`<div class="score-tile">${c.toUpperCase()}<small>${scoreMap[c]||0} pt</small></div>`).join('')}</div><div class="tool-note">${w.toUpperCase()} · ${w.length} letters · ${total} base points</div>`;
- }
+
+function run(el, type) {
+  const get = id => el.querySelector('#' + id)?.value || '';
+  const words = allWords();
+
+  if (type === 'solver') {
+    const letters = get('letters').toLowerCase().replace(/[^a-z?]/g, '');
+    if (letters.length < 3) {
+      toast('Enter at least 3 letters');
+      return;
+    }
+
+    const counts = {};
+    let wild = 0;
+
+    for (const c of letters) {
+      if (c === '?') wild++;
+      else counts[c] = (counts[c] || 0) + 1;
+    }
+
+    const min = +get('minLen');
+    const max = +get('maxLen');
+
+    const out = [];
+
+    for (const w of words) {
+      if (w.length < min || w.length > max || w.length > letters.length) continue;
+
+      const available = { ...counts };
+      let missing = 0;
+
+      for (const c of w) {
+        if (available[c] > 0) available[c]--;
+        else missing++;
+
+        if (missing > wild) break;
+      }
+
+      if (missing <= wild) out.push(w);
+    }
+
+    const sort = el.querySelector('#sortScore').checked;
+    out.sort((a, b) =>
+      sort
+        ? score(b) - score(a) || b.length - a.length || a.localeCompare(b)
+        : b.length - a.length || a.localeCompare(b)
+    );
+
+    showResults(el, out);
+
+  } else if (type === 'anagram') {
+    const s = get('anaInput').toLowerCase().replace(/[^a-z]/g, '');
+
+    if (s.length < 3) {
+      toast('Enter at least 3 letters');
+      return;
+    }
+
+    const key = [...s].sort().join('');
+    const includeSelf = el.querySelector('#includeSelf').checked;
+
+    const out = words.filter(w =>
+      w.length === s.length &&
+      (includeSelf || w !== s) &&
+      [...w].sort().join('') === key
+    );
+
+    out.sort((a, b) => score(b) - score(a) || a.localeCompare(b));
+    showResults(el, out);
+
+  } else if (type === 'missing') {
+    const p = get('pattern').toLowerCase().replace(/[^a-z?]/g, '');
+
+    if (p.length < 3) {
+      toast('Enter a pattern of at least 3 characters');
+      return;
+    }
+
+    const out = words.filter(w => {
+      if (w.length !== p.length) return false;
+
+      for (let i = 0; i < p.length; i++) {
+        if (p[i] !== '?' && p[i] !== w[i]) return false;
+      }
+
+      return true;
+    });
+
+    showResults(el, out.sort());
+
+  } else if (type === 'filter') {
+    const n = +get('filterLen');
+    showResults(el, words.filter(w => w.length === n).sort());
+  }
+
+  else if (type === 'score') {
+    const w = get('scoreInput').toLowerCase().replace(/[^a-z]/g, '');
+
+    if (!w) {
+      toast('Enter a word');
+      return;
+    }
+
+    const total = score(w);
+
+    el.querySelector('#scoreResult').innerHTML =
+      `<div class="score-big">${total}<span style="font-size:16px;color:var(--muted)"> pts</span></div>
+      <div class="score-tiles">${[...w].map(c =>
+        `<div class="score-tile">${c.toUpperCase()}<small>${scoreMap[c] || 0} pt</small></div>`
+      ).join('')}</div>
+      <div class="tool-note">${w.toUpperCase()} · ${w.length} letters · ${total} base points</div>`;
+  }
 }
+
 function wire(el,type){
  el.addEventListener('pointerdown',()=>activate(el));
  el.querySelector('.win-title').addEventListener('pointerdown',e=>{
