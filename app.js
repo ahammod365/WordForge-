@@ -13,7 +13,36 @@ const tools={
  dictionary:{title:'Dictionary Manager',icon:'▤',sub:'LOCAL WORD LIST'},
  help:{title:'WordForge Guide',icon:'?',sub:'QUICK HELP'}
 };
-function allWords(){return [...new Set([...wordSet,...customWords])];}
+//function allWords(){return [...new Set([...wordSet,...customWords])];}
+let largeWords = new Set();
+
+function allWords(){
+ return [...new Set([...wordSet,...largeWords,...customWords])];
+}
+async function loadLargeDictionary(){
+ try {
+  const response = await fetch('./public/dictionary/words-3-12.txt');
+  if(!response.ok) throw new Error('Dictionary file not found');
+
+  const text = await response.text();
+
+  largeWords = new Set(
+   text.split(/\s+/).filter(w => /^[a-z]{3,12}$/.test(w))
+  );
+
+  console.log('WordForge dictionary loaded:', largeWords.size);
+
+  const info = document.querySelector('#dictInfo');
+  if(info){
+   info.textContent = allWords().length.toLocaleString() + ' words currently loaded';
+  }
+ } catch(error){
+  console.error('Dictionary loading failed:', error);
+ }
+}
+
+loadLargeDictionary();
+
 function score(w){return [...w.toLowerCase()].reduce((s,c)=>s+(scoreMap[c]||0),0)}
 function toast(s){let t=$('#toast');t.textContent=s;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2100)}
 function openWindow(type){
