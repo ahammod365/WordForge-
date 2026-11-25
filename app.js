@@ -165,26 +165,32 @@ function run(el, type) {
     const min = +get('minLen');
     const max = +get('maxLen');
 
-const out = [];
+const out = getCachedResults(
+  `multi:${letters}:${min}:${max}:${wild}`,
+  () => {
+    const results = [];
 
-for (let length = min; length <= Math.min(max, letters.length); length++) {
-  const candidates = wordsByLength.get(length) || [];
+    for (let length = min; length <= Math.min(max, letters.length); length++) {
+      const candidates = wordsByLength.get(length) || [];
 
-  for (const w of candidates) {
-    const available = { ...counts };
-    let missing = 0;
+      for (const w of candidates) {
+        const available = { ...counts };
+        let missing = 0;
 
-    for (const c of w) {
-      if (available[c] > 0) available[c]--;
-      else missing++;
+        for (const c of w) {
+          if (available[c] > 0) available[c]--;
+          else missing++;
 
-      if (missing > wild) break;
+          if (missing > wild) break;
+        }
+
+        if (missing <= wild) results.push(w);
+      }
     }
 
-    if (missing <= wild) out.push(w);
+    return results;
   }
-}
-
+);
 
     const sort = el.querySelector('#sortScore').checked;
     out.sort((a, b) =>
@@ -216,32 +222,24 @@ const out = getCachedResults(
 out.sort((a, b) => score(b) - score(a) || a.localeCompare(b));
 showResults(el, out);
 
-  } else if (type === 'missing') {
-    const p = get('pattern').toLowerCase().replace(/[^a-z?]/g, '');
+    } else if (type === 'missing') {
+  const p = get('pattern').toLowerCase().replace(/[^a-z?]/g, '');
 
-    if (p.length < 3) {
-      toast('Enter a pattern of at least 3 characters');
-      return;
-    }
-const out = (wordsByLength.get(p.length) || []).filter(w => {
- const out = getCachedResults(
-  `missing:${p}`,
-  () => (wordsByLength.get(p.length) || []).filter(w => {
-    return [...p].every((c, i) => c === '?' || c === w[i]);
-  })
-);
-   /*   if (w.length !== p.length) return false;
+  if (p.length < 3) {
+    toast('Enter a pattern of at least 3 characters');
+    return;
+  }
 
-      for (let i = 0; i < p.length; i++) {
-        if (p[i] !== '?' && p[i] !== w[i]) return false;
-      }
+  const out = getCachedResults(
+    `missing:${p}`,
+    () => (wordsByLength.get(p.length) || []).filter(w => {
+      return [...p].every((c, i) => c === '?' || c === w[i]);
+    })
+  );
 
-      return true; */
-    });
+  showResults(el, [...out].sort());
 
-    showResults(el, out.sort());
-
-  } else if (type === 'filter') {
+ else if (type === 'filter') {
     const n = +get('filterLen');
     showResults(el, [...(wordsByLength.get(n) || [])].sort());
   }
